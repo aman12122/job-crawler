@@ -271,7 +271,7 @@ View all jobs: https://your-app-url.run.app
 - [x] Add clickable links to original postings
 - [x] Test locally with database
 
-### Phase 4: Email Digest
+### Phase 4: Email Digest 🚧
 **Goal**: Send daily email with new jobs
 
 - [ ] Set up Gmail API credentials

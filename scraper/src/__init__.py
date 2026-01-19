@@ -10,8 +10,9 @@ from .database import Database, CompanyRepository, JobRepository
 from .config import Config, get_config
 from .main import run_crawler, run_crawler_for_url
 from .cleanup import cleanup_old_jobs
+from .digest import send_daily_digest
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     # Models
@@ -31,4 +32,5 @@ __all__ = [
     "run_crawler",
     "run_crawler_for_url",
     "cleanup_old_jobs",
+    "send_daily_digest",
 ]
