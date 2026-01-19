@@ -1,97 +1,119 @@
-# Deployment Guide: Google Cloud Platform (GCP)
+# Zero Cost Deployment Guide: Google Cloud Platform
 
-This guide outlines how to move the Job Crawler from local Docker Compose to a production Google Cloud environment.
+This guide details how to deploy the Job Crawler on Google Cloud Platform's **Always Free Tier**.
+
+We will use a single **Compute Engine e2-micro instance** to host the Database, Web App, and Scraper. This architecture incurs **$0 cost** if you stay within the free tier limits.
 
 ## Architecture
 
-- **Web App**: Cloud Run Service (always available, scales to zero)
-- **Scraper**: Cloud Run Job (triggered on schedule)
-- **Database**: Cloud SQL for PostgreSQL
-- **Scheduler**: Cloud Scheduler (cron trigger)
+- **Infrastructure**: 1x `e2-micro` VM (2 vCPUs, 1GB RAM)
+- **Region**: `us-east1`, `us-west1`, or `us-central1` (Required for free tier)
+- **Storage**: 30GB Standard Persistent Disk
+- **Orchestration**: Docker Compose
 
 ## Prerequisites
 
-1.  Google Cloud Project created
-2.  `gcloud` CLI installed and authenticated
-3.  Billing enabled (required for Cloud Build/Run, though free tier covers most usage)
+1.  Google Cloud Account
+2.  `gcloud` CLI installed locally
+3.  Project Billing Account linked (no charges will occur, but required for activation)
 
-## Step 1: Set up Cloud SQL (Database)
+## Step 1: Create the Free VM
 
-1.  **Create Instance**:
+Run this command to create the instance eligible for the free tier:
+
+```bash
+gcloud compute instances create job-crawler-vm \
+    --project=YOUR_PROJECT_ID \
+    --zone=us-east1-b \
+    --machine-type=e2-micro \
+    --network-tier=STANDARD \
+    --image-family=debian-12 \
+    --image-project=debian-cloud \
+    --boot-disk-size=30GB \
+    --boot-disk-type=pd-standard \
+    --tags=http-server
+```
+
+*Note: `network-tier=STANDARD` and `pd-standard` are important for cost optimization.*
+
+## Step 2: Configure Firewall
+
+Allow HTTP traffic to access the web dashboard:
+
+```bash
+gcloud compute firewall-rules create allow-http-job-crawler \
+    --allow tcp:80 \
+    --target-tags http-server
+```
+
+## Step 3: Setup the Server
+
+1.  **SSH into the VM**:
     ```bash
-    gcloud sql instances create job-crawler-db \
-        --database-version=POSTGRES_15 \
-        --tier=db-f1-micro \
-        --region=us-east1
+    gcloud compute ssh job-crawler-vm
     ```
 
-2.  **Create Database & User**:
+2.  **Install Docker & Git** (using our helper script):
     ```bash
-    gcloud sql databases create job_crawler --instance=job-crawler-db
-    gcloud sql users create jobcrawler --instance=job-crawler-db --password=YOUR_SECURE_PASSWORD
+    # Copy script content or curl it if you hosted it
+    curl -fsSL https://raw.githubusercontent.com/aman12122/job-crawler/main/docs/vm-setup.sh | bash
     ```
 
-3.  **Get Connection Name**:
+3.  **Clone the Repository**:
     ```bash
-    gcloud sql instances describe job-crawler-db --format='value(connectionName)'
-    # Output example: project-id:us-east1:job-crawler-db
+    git clone https://github.com/aman12122/job-crawler.git
+    cd job-crawler
     ```
 
-## Step 2: Deploy Web App
-
-1.  **Build & Push Image**:
+4.  **Configure Environment**:
+    Create a `.env` file for production secrets:
     ```bash
-    gcloud builds submit ./web --tag gcr.io/YOUR_PROJECT_ID/job-crawler-web
+    nano .env
+    ```
+    Add:
+    ```
+    DATABASE_PASSWORD=super_secure_password_123
     ```
 
-2.  **Deploy to Cloud Run**:
+5.  **Setup Email Credentials**:
+    Upload your `credentials.json` (Gmail API) to the server:
     ```bash
-    gcloud run deploy job-crawler-web \
-        --image gcr.io/YOUR_PROJECT_ID/job-crawler-web \
-        --region us-east1 \
-        --allow-unauthenticated \
-        --set-env-vars="DATABASE_USER=jobcrawler,DATABASE_PASSWORD=YOUR_SECURE_PASSWORD,DATABASE_NAME=job_crawler" \
-        --add-cloudsql-instances=YOUR_CONNECTION_NAME
+    # From your local machine
+    gcloud compute scp ./scraper/credentials.json job-crawler-vm:~/job-crawler/scraper/
     ```
 
-    *Note: Cloud Run automatically handles the Unix socket connection to Cloud SQL.*
+## Step 4: Start the Application
 
-## Step 3: Deploy Scraper Job
+Run the production Docker Compose configuration:
 
-1.  **Build & Push Image**:
+```bash
+sudo docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The web dashboard should now be accessible at `http://YOUR_VM_EXTERNAL_IP`.
+
+## Step 5: Schedule the Scraper
+
+To run the scraper daily at 12 PM, we'll use the VM's system cron.
+
+1.  Open crontab:
     ```bash
-    gcloud builds submit ./scraper --tag gcr.io/YOUR_PROJECT_ID/job-crawler-scraper
+    crontab -e
     ```
 
-2.  **Create Cloud Run Job**:
-    ```bash
-    gcloud run jobs create job-crawler-scraper \
-        --image gcr.io/YOUR_PROJECT_ID/job-crawler-scraper \
-        --region us-east1 \
-        --set-env-vars="DATABASE_USER=jobcrawler,DATABASE_PASSWORD=YOUR_SECURE_PASSWORD,DATABASE_NAME=job_crawler,DATABASE_HOST=/cloudsql/YOUR_CONNECTION_NAME" \
-        --add-cloudsql-instances=YOUR_CONNECTION_NAME \
-        --command="python,-m,src.main"
+2.  Add the following line (adjust path as needed):
+    ```cron
+    0 12 * * * cd /home/YOUR_USER/job-crawler && sudo docker compose -f docker-compose.prod.yml run --rm scraper
     ```
 
-## Step 4: Schedule the Scraper
+## Maintenance
 
-1.  **Create Scheduler Job**:
+- **View Logs**:
     ```bash
-    gcloud scheduler jobs create http daily-crawl \
-        --location=us-east1 \
-        --schedule="0 12 * * *" \
-        --uri="https://us-east1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/YOUR_PROJECT_ID/jobs/job-crawler-scraper:run" \
-        --http-method=POST \
-        --oauth-service-account-email=YOUR_SA_EMAIL
+    sudo docker compose -f docker-compose.prod.yml logs -f
     ```
-
-## Step 5: Email Setup
-
-1.  Upload your `credentials.json` (Gmail API) to Secret Manager.
-2.  Mount the secret in the Scraper Cloud Run Job so it can send emails securely.
-
-## Cost Estimation (Free Tier candidates)
-
-- **Cloud Run**: First 180,000 vCPU-seconds free per month.
-- **Cloud SQL**: `db-f1-micro` is NOT free (approx $7-10/mo). 
-  - *Alternative*: Run Postgres in a VM (Compute Engine e2-micro) which IS free tier eligible, but requires more manual setup.
+- **Update Application**:
+    ```bash
+    git pull
+    sudo docker compose -f docker-compose.prod.yml up -d --build
+    ```

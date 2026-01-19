@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: job-crawler-db
+    environment:
+      POSTGRES_USER: jobcrawler
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: job_crawler
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scraper/sql:/docker-entrypoint-initdb.d
+    # Low-memory configuration for e2-micro (1GB RAM)
+    command: postgres -c 'shared_buffers=128MB' -c 'max_connections=20'
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobcrawler -d job_crawler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: job-crawler-web
+    ports:
+      - "80:3000"  # Expose on port 80 (HTTP)
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: job_crawler
+      DATABASE_USER: jobcrawler
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      # Limit Node.js memory usage
+      NODE_OPTIONS: "--max-old-space-size=400"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: job-crawler-scraper
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: job_crawler
+      DATABASE_USER: jobcrawler
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      # Email credentials (mounted via volume or env var)
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials.json
+    volumes:
+      - ./scraper/credentials.json:/app/credentials.json
+      - ./scraper/token.json:/app/token.json
+    depends_on:
+      db:
+        condition: service_healthy
+    # We will run this via cron on the host, not as a continuously running service
+    profiles:
+      - manual
+
+volumes:
+  postgres_data:
