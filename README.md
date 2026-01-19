@@ -10,88 +10,58 @@ Job Crawler automatically monitors career pages from your target companies, iden
 
 ```
 job-crawler/
-├── scraper/          # Python web scraper
-│   ├── src/          # Source code
-│   ├── tests/        # Test files
-│   └── pyproject.toml
-├── web/              # Next.js frontend
-│   ├── src/          # Source code
-│   └── package.json
-├── ROADMAP.md        # Project roadmap and documentation
-└── README.md         # This file
+├── scraper/          # Python web scraper & digest sender
+├── web/              # Next.js frontend dashboard
+├── docker-compose.yml # Full stack local deployment
+└── ROADMAP.md        # Project roadmap
 ```
 
-## Prerequisites
+## Quick Start (MVP)
 
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 15+
-- GCP account (for deployment)
+The easiest way to run the entire system is via Docker Compose.
 
-## Quick Start
-
-### 1. Clone the repository
+### 1. Start the System
 
 ```bash
-git clone https://github.com/aman12122/job-crawler.git
-cd job-crawler
+docker compose up --build -d
 ```
 
-### 2. Set up the scraper
+This starts:
+- **Database** (PostgreSQL) on port `5434` (external) / `5432` (internal)
+- **Web Dashboard** on [http://localhost:3000](http://localhost:3000)
+- **Scraper** (runs once to fetch initial jobs)
+
+### 2. View the Dashboard
+
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+You should see the jobs fetched from the test company (d1g1t).
+
+### 3. Run Scraper Manually
+
+To trigger a new crawl:
 
 ```bash
-cd scraper
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+docker compose run scraper
 ```
 
-### 3. Set up the web app
+To send the email digest (requires `credentials.json` for real email, defaults to console output):
 
 ```bash
-cd web
-npm install
-npm run dev
+docker compose run scraper python -m src.digest your.email@example.com
 ```
 
-The web app will be available at http://localhost:3000
+## Configuration
+
+- **Database**: `scraper/sql/001_init.sql` defines the schema.
+- **Companies**: Add more companies to the `companies` table using SQL or by extending the seed data.
+- **Email**: To enable real emails, place your `credentials.json` (Gmail API) in `scraper/`.
 
 ## Development
 
-### Scraper
-
-```bash
-cd scraper
-source .venv/bin/activate
-
-# Run tests
-pytest
-
-# Lint code
-ruff check src/
-
-# Type check
-mypy src/
-```
-
-### Web App
-
-```bash
-cd web
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Run linting
-npm run lint
-```
-
-## Documentation
-
-See [ROADMAP.md](./ROADMAP.md) for the full project roadmap, technical architecture, and development log.
+See individual READMEs for detailed development instructions:
+- [Scraper Documentation](./scraper/README.md)
+- [Web UI Documentation](./web/README.md)
+- [Full Roadmap](./ROADMAP.md)
 
 ## License
 

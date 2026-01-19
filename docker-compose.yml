@@ -17,5 +17,41 @@ services:
       timeout: 5s
       retries: 5
 
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: job-crawler-web
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: job_crawler
+      DATABASE_USER: jobcrawler
+      DATABASE_PASSWORD: jobcrawler_dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: job-crawler-scraper
+    # Overwrite command to keep container running if needed, or just let it exit
+    # For now, we'll just let it run the main crawler and exit
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: job_crawler
+      DATABASE_USER: jobcrawler
+      DATABASE_PASSWORD: jobcrawler_dev
+    depends_on:
+      db:
+        condition: service_healthy
+    # Don't restart automatically as it's a one-off job
+    restart: "no"
+
 volumes:
   postgres_data:

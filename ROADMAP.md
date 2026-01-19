@@ -271,25 +271,23 @@ View all jobs: https://your-app-url.run.app
 - [x] Add clickable links to original postings
 - [x] Test locally with database
 
-### Phase 4: Email Digest 🚧
+### Phase 4: Email Digest ✅
 **Goal**: Send daily email with new jobs
 
-- [ ] Set up Gmail API credentials
-- [ ] Create email template (HTML)
-- [ ] Implement email sending logic
-- [ ] Track "new" jobs (first_seen_at within 24 hours)
-- [ ] Test email delivery
+- [x] Set up Gmail API credentials (code implemented, requires user creds)
+- [x] Create email template (HTML)
+- [x] Implement email sending logic
+- [x] Track "new" jobs (first_seen_at within 24 hours)
+- [x] Test email delivery (simulated via ConsoleBackend)
 
-### Phase 5: Deployment
-**Goal**: Deploy to GCP and run automatically
+### Phase 5: Deployment 🚀
+**Goal**: Dockerize and prepare for production
 
-- [ ] Dockerize scraper (Python)
-- [ ] Dockerize web app (Next.js)
-- [ ] Deploy to Cloud Run
-- [ ] Configure Cloud Scheduler for 12 PM EST
-- [ ] Set up environment variables and secrets
-- [ ] Configure Cloud SQL connection
-- [ ] Test end-to-end in production
+- [x] Dockerize scraper (Python)
+- [x] Dockerize web app (Next.js)
+- [x] Create docker-compose for full stack (DB + Web + Scraper)
+- [ ] Deploy to Cloud Run *(User Action Required)*
+- [ ] Configure Cloud Scheduler *(User Action Required)*
 
 ### Phase 6: Multi-Company Expansion
 **Goal**: Add more career sites
