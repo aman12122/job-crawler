@@ -262,14 +262,14 @@ View all jobs: https://your-app-url.run.app
 - [ ] Set up Cloud SQL instance on GCP *(deferred to Phase 5)*
 - [x] Test database operations
 
-### Phase 3: Web UI MVP
+### Phase 3: Web UI MVP ✅
 **Goal**: Display jobs on a web page with sorting
 
-- [ ] Create Next.js API routes for fetching jobs
-- [ ] Build job listing page with sorting controls
-- [ ] Style with basic CSS (clean, functional)
-- [ ] Add clickable links to original postings
-- [ ] Test locally with database
+- [x] Create Next.js API routes for fetching jobs
+- [x] Build job listing page with sorting controls
+- [x] Style with basic CSS (clean, functional)
+- [x] Add clickable links to original postings
+- [x] Test locally with database
 
 ### Phase 4: Email Digest
 **Goal**: Send daily email with new jobs
@@ -529,3 +529,47 @@ SELECT title, category, first_seen_at FROM jobs;
 - Timestamps with timezone for proper date handling
 
 #### Phase 2 Completed
+
+---
+
+#### Phase 3 Started: Web UI MVP
+
+**Objective**: Build a simple web interface to browse, sort, and filter jobs.
+
+**User Stories Being Addressed**:
+- **US-04**: *"As a job seeker, I want to view all jobs on a web page sorted by date, company, or category"*
+
+**Technical Approach**:
+- **Next.js App Router**: Modern React framework for server-side rendering and API routes.
+- **PostgreSQL Connection**: Used `pg` pool in Next.js to connect to the same Docker database.
+- **Client-Side Filtering**: Simple state-based filtering for the MVP (fetching filtered data from API).
+- **Tailwind CSS**: Rapid UI development with clean, dark-mode compatible styles.
+
+**Progress**:
+
+1. **Environment Setup**:
+   - Configured `.env.local` for Next.js to connect to `localhost:5434`.
+   - Installed `pg` driver and utility libraries (`date-fns`, `clsx`).
+
+2. **Backend (API Routes)**:
+   - Created `src/lib/db.ts`: Singleton database connection pool.
+   - Created `src/app/api/jobs/route.ts`:
+     - GET endpoint supporting query parameters: `entryLevel=true`, `company=...`, `sort=date|company`.
+     - Secure parameterized SQL queries to prevent injection.
+
+3. **Frontend Components**:
+   - `JobCard.tsx`: Reusable component displaying job details, "Entry Level" badge, relative time (e.g., "2 hours ago"), and direct apply link.
+   - `page.tsx`: Main dashboard with:
+     - Header with filters (Entry Level checkbox, Sort dropdown).
+     - Loading state skeleton.
+     - Grid layout for job cards.
+
+4. **Styling**:
+   - Implemented a clean, minimalist design using Tailwind CSS.
+   - Added Dark Mode support (automatic based on system preference).
+
+**Test Results**:
+- API Endpoint (`curl http://localhost:3001/api/jobs`) returns JSON data correctly.
+- Database connection verification script confirmed access to the 2 existing jobs.
+
+#### Phase 3 Completed
