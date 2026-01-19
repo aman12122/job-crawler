@@ -252,15 +252,15 @@ View all jobs: https://your-app-url.run.app
 - [x] Add rate limiting and polite crawling (respect robots.txt)
 - [x] Write unit tests for parser
 
-### Phase 2: Database Integration
+### Phase 2: Database Integration ✅
 **Goal**: Persist jobs to PostgreSQL
 
-- [ ] Set up local PostgreSQL for development
-- [ ] Implement database schema (companies, jobs tables)
-- [ ] Add job deduplication logic (external_id)
-- [ ] Create cleanup job for 7-day retention
-- [ ] Set up Cloud SQL instance on GCP
-- [ ] Test database operations
+- [x] Set up local PostgreSQL for development
+- [x] Implement database schema (companies, jobs tables)
+- [x] Add job deduplication logic (external_id)
+- [x] Create cleanup job for 7-day retention
+- [ ] Set up Cloud SQL instance on GCP *(deferred to Phase 5)*
+- [x] Test database operations
 
 ### Phase 3: Web UI MVP
 **Goal**: Display jobs on a web page with sorting
@@ -432,3 +432,100 @@ Fetching jobs from d1g1t...
 - Factory pattern (`create_scraper()`) to support multiple platforms in the future
 
 #### Phase 1 Completed
+
+---
+
+#### Phase 2 Started: Database Integration
+
+**Objective**: Persist jobs to PostgreSQL with deduplication and automatic cleanup
+
+**User Stories Being Addressed**:
+- **US-01**: *"As a job seeker, I want the system to automatically check career pages daily"* - Database enables tracking what's new vs. already seen
+- **US-05**: *"As a job seeker, I want jobs older than 7 days to be automatically removed"* - Cleanup job implementation
+
+**Pain Points Being Solved**:
+- **Missing time-sensitive postings**: Database tracks `first_seen_at` to identify new jobs within 24 hours
+- **Information overload**: 7-day retention keeps the list focused on recent, relevant postings
+
+**Technical Approach**:
+- PostgreSQL for reliability and scalability
+- Repository pattern for clean separation of concerns
+- Upsert logic for deduplication (avoid duplicate job entries)
+- Scheduled cleanup for 7-day retention
+
+**Progress**:
+
+1. **Docker-based PostgreSQL setup**:
+   - Created `docker-compose.yml` for local development
+   - PostgreSQL 15 running on port 5434
+   - Auto-initialization with schema on first run
+
+2. **Database schema** (`scraper/sql/001_init.sql`):
+   - `companies` table: tracks career pages to crawl
+   - `jobs` table: stores job postings with deduplication
+   - Unique constraint on `(company_id, external_id)` prevents duplicates
+   - `first_seen_at` timestamp for "new job" detection
+   - Auto-updating `updated_at` triggers
+   - Seed data includes d1g1t company
+
+3. **Configuration layer** (`src/config.py`):
+   - Environment-based configuration
+   - Supports both individual vars and DATABASE_URL format
+   - `.env.example` template provided
+
+4. **Database layer** (`src/database.py`):
+   - `Database` class: connection manager with context manager support
+   - `CompanyRepository`: CRUD for companies
+   - `JobRepository`: CRUD for jobs with upsert (deduplication) logic
+   - `get_new_jobs()`: finds jobs from last 24 hours
+   - `delete_old_jobs()`: removes jobs older than N days
+
+5. **Cleanup job** (`src/cleanup.py`):
+   - CLI tool for removing old jobs
+   - `--dry-run` flag for safe testing
+   - Configurable retention period (default: 7 days)
+
+6. **Updated main crawler** (`src/main.py`):
+   - Now reads companies from database
+   - Saves jobs with deduplication
+   - Reports new vs. existing jobs
+   - `--no-save` flag for dry-run mode
+
+7. **Integration tests** (12 new tests, 32 total):
+   - Database connection tests
+   - Company repository tests
+   - Job repository tests (upsert, deduplication, cleanup)
+
+**Test Results**:
+```
+$ python -m pytest tests/ -v
+========================= 32 passed in 1.74s =========================
+```
+
+**Live Test Output**:
+```
+# First run - jobs added to database:
+  D1G1T - 2 job(s) found
+  NEW: 2 job(s) added to database
+
+# Second run - deduplication works:
+  D1G1T - 2 job(s) found
+  New jobs added: 0
+```
+
+**Database Verification**:
+```sql
+SELECT title, category, first_seen_at FROM jobs;
+              title              | category  |         first_seen_at         
+---------------------------------+-----------+-------------------------------
+ Senior Sales Executive          | Sales     | 2026-01-19 21:08:34.232186+00
+ Senior Director - Channel Sales | Sales, US | 2026-01-19 21:08:33.821375+00
+```
+
+**Key Technical Decisions**:
+- Used Docker Compose for reproducible local development
+- Repository pattern for testable data access
+- Upsert pattern for idempotent job insertion
+- Timestamps with timezone for proper date handling
+
+#### Phase 2 Completed

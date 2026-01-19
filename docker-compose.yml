@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: job-crawler-db
+    environment:
+      POSTGRES_USER: jobcrawler
+      POSTGRES_PASSWORD: jobcrawler_dev
+      POSTGRES_DB: job_crawler
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scraper/sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobcrawler -d job_crawler"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
