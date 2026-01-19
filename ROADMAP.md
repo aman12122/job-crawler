@@ -23,7 +23,7 @@
 | **Project Name** | job-crawler |
 | **Author** | Aman |
 | **Created** | January 2026 |
-| **Status** | Planning |
+| **Status** | Phase 1: Scraper MVP |
 
 ### Goals
 
@@ -232,25 +232,25 @@ View all jobs: https://your-app-url.run.app
 
 ## Phased Roadmap
 
-### Phase 0: Project Setup
+### Phase 0: Project Setup ✅
 **Goal**: Initialize repository and development environment
 
-- [ ] Create GitHub repository
-- [ ] Set up project structure (monorepo: `/scraper`, `/web`)
-- [ ] Initialize Python environment (pyproject.toml, venv)
-- [ ] Initialize Next.js app with TypeScript
-- [ ] Create GCP project and enable required APIs
-- [ ] Document local development setup in README
+- [x] Create GitHub repository
+- [x] Set up project structure (monorepo: `/scraper`, `/web`)
+- [x] Initialize Python environment (pyproject.toml, venv)
+- [x] Initialize Next.js app with TypeScript
+- [ ] Create GCP project and enable required APIs *(deferred to Phase 5)*
+- [x] Document local development setup in README
 
-### Phase 1: Scraper MVP
+### Phase 1: Scraper MVP ✅
 **Goal**: Fetch jobs from d1g1t and print to console
 
-- [ ] Research BambooHR API/page structure
-- [ ] Create Python scraper for BambooHR sites
-- [ ] Parse job listings (title, category, location, URL)
-- [ ] Implement new grad/associate keyword detection
-- [ ] Add rate limiting and polite crawling (respect robots.txt)
-- [ ] Write unit tests for parser
+- [x] Research BambooHR API/page structure
+- [x] Create Python scraper for BambooHR sites
+- [x] Parse job listings (title, category, location, URL)
+- [x] Implement new grad/associate keyword detection
+- [x] Add rate limiting and polite crawling (respect robots.txt)
+- [x] Write unit tests for parser
 
 ### Phase 2: Database Integration
 **Goal**: Persist jobs to PostgreSQL
@@ -355,7 +355,80 @@ View all jobs: https://your-app-url.run.app
 
 ### January 19, 2026
 
+#### Phase 0 Completed
 - **Project initiated**: Created roadmap document after requirements gathering session
 - **Test site selected**: d1g1t BambooHR careers page (https://d1g1t.bamboohr.com/careers)
 - **Key discovery**: BambooHR sites use a standardized structure, likely with JSON API endpoints for job data
 - **Decision**: Start with BambooHR parser as it can support multiple companies using the same platform
+- **GitHub repo created**: https://github.com/aman12122/job-crawler
+- **Project structure established**: `/scraper` (Python), `/web` (Next.js)
+
+#### Phase 1 Started: Scraper MVP
+
+**Objective**: Build a working scraper that fetches jobs from d1g1t's BambooHR careers page
+
+**User Stories Being Addressed**:
+- **US-01**: *"As a job seeker, I want the system to automatically check career pages daily so I don't have to manually visit each site"*
+
+**Pain Points Being Solved**:
+- **Tedious manual process**: This scraper eliminates the need to manually visit career pages
+- **Missing time-sensitive postings**: Automated crawling ensures no new postings are missed
+
+**Progress**:
+
+1. **Discovered BambooHR JSON API** - The `/careers/list` endpoint returns structured JSON data, eliminating the need for HTML parsing. This is more reliable and less likely to break.
+
+2. **Created data models** (`src/models.py`):
+   - `Job` dataclass with fields: title, url, external_id, company_name, category, location, employment_type, is_entry_level
+   - `Company` dataclass for future database integration
+
+3. **Built BambooHR scraper** (`src/scrapers.py`):
+   - `BambooHRScraper` class that fetches from `/careers/list` endpoint
+   - Rate limiting (1 request/second) to respect the site
+   - Polite User-Agent header identifying the crawler
+   - Location parsing from multiple possible fields
+   - Entry-level detection via keyword matching
+
+4. **Implemented entry-level keyword detection**:
+   - Keywords: "new grad", "junior", "associate", "entry level", "analyst i", "intern", etc.
+   - Case-insensitive matching
+   - Checks both job title and department
+
+5. **Created CLI tool** (`src/main.py`):
+   - Runs crawler and prints formatted output
+   - `--entry-level-only` flag to filter results
+   - `--url` flag to test custom career pages
+
+6. **Wrote comprehensive unit tests** (20 tests, all passing):
+   - Scraper initialization tests
+   - Entry-level detection tests
+   - Location parsing tests
+   - API response parsing tests
+   - Job model tests
+
+**Test Results**:
+```
+$ python -m pytest tests/ -v
+========================= 20 passed in 0.08s =========================
+```
+
+**Live Test Output**:
+```
+Fetching jobs from d1g1t...
+============================================================
+  D1G1T - 2 job(s) found
+============================================================
+  OTHER ROLES (2):
+  - Senior Director - Channel Sales | Sales, US
+  - Senior Sales Executive | Sales | United States
+
+  Total jobs found: 2
+  Entry-level jobs: 0
+```
+
+**Key Technical Decisions**:
+- Used `requests` library instead of `aiohttp` for simplicity (can upgrade later if needed)
+- Used dataclasses instead of Pydantic for lightweight models
+- Factory pattern (`create_scraper()`) to support multiple platforms in the future
+
+#### Phase 1 Completed
