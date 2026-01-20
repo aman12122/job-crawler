@@ -5,7 +5,32 @@ An AI-powered evolution of the job crawler, designed to find 100% of open jobs u
 
 ## 🏗 Development Log
 
-### Phase 1: Foundation (Current)
+### Phase 2: Scraper Engine (Completed)
+**Goal**: Build the async scraping engine with pagination support and efficient queuing.
+
+#### 2.1 Data Models (`src/models.py`)
+- Defined strict Pydantic models for `Company`, `Job`, and `CrawlResult`.
+- **Reasoning**: Ensures consistent data structure across the entire pipeline.
+
+#### 2.2 Base Scraper (`src/scrapers/base.py`)
+- Implemented the abstract `BaseScraper` class.
+- **Key Feature**: Handles `aiohttp` sessions and basic rate limiting automatically.
+
+#### 2.3 Pagination Strategies (`src/scrapers/strategies.py`)
+- Implemented `OffsetPagination` (for APIs like Greenhouse) and `TokenPagination`.
+- **Reasoning**: Decoupling pagination logic from the scraper allows us to mix-and-match strategies (e.g., a custom site might still use offset pagination).
+- **Greenhouse Scraper**: Implemented the first concrete scraper (`src/scrapers/greenhouse.py`) using the offset strategy.
+
+#### 2.4 Async Pipeline (`src/pipeline.py`)
+- Implemented the `Pipeline` class to orchestrate: Scrape -> Pre-Filter -> Detail Fetch -> DB Save.
+- **Concurrency**: Uses `asyncio.Semaphore` to limit concurrent detail fetches (default 5) to be polite to target servers.
+- **Optimization**: Skips detail fetching for jobs rejected by the pre-filter.
+
+#### 2.5 Filters (`src/filters.py`)
+- Implemented `PreFilter` with a keyword rejection list ("Senior", "Staff", "Director").
+- **Cost Saving**: This step runs *before* expensive operations (detail fetching & AI), saving bandwidth and eventual API costs.
+
+### Phase 1: Foundation (Completed)
 **Goal**: Establish the project structure, database schema, and core configuration.
 
 #### 1.1 Directory Structure
