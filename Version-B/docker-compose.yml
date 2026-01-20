@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: job-crawler-v2-db
+    environment:
+      POSTGRES_USER: jobcrawler
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-devpassword}
+      POSTGRES_DB: job_crawler
+    volumes:
+      - postgres_v2_data:/var/lib/postgresql/data
+      # Mount V2 initialization scripts
+      - ./scraper/sql:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobcrawler -d job_crawler"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Scraper service (commented out until we have a runnable entrypoint)
+  # scraper:
+  #   build: ./scraper
+  #   environment:
+  #     DATABASE_HOST: db
+  #     DATABASE_PASSWORD: ${DATABASE_PASSWORD:-devpassword}
+  #     GEMINI_API_KEY: ${GEMINI_API_KEY}
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+volumes:
+  postgres_v2_data:

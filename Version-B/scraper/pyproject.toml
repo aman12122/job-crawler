@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-crawler-v2"
+version = "2.0.0"
+description = "AI-powered job crawler with intelligent filtering using Google Gemini"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Job Crawler Team"}
+]
+keywords = ["job-crawler", "ai", "gemini", "scraper", "async"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Async HTTP client for fast web scraping
+    "aiohttp>=3.9.0",
+    
+    # Async PostgreSQL driver for non-blocking database operations
+    "asyncpg>=0.29.0",
+    
+    # Google Gemini AI SDK for job analysis
+    "google-generativeai>=0.3.0",
+    
+    # HTML parsing for extracting job details
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",  # Faster parser for BeautifulSoup
+    
+    # Environment variable management
+    "python-dotenv>=1.0.0",
+    
+    # Data validation with Pydantic
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    
+    # Rate limiting for API calls
+    "aiolimiter>=1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "aioresponses>=0.7.0",  # Mock aiohttp responses
+]
+
+[project.scripts]
+job-crawler = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
