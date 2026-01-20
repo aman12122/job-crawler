@@ -1,68 +1,31 @@
-# Job Crawler
+# Job Crawler - Multi-Version Monorepo
 
-A tool to track new grad and associate-level job postings from specific company career pages.
+This repository contains two versions of the Job Crawler application.
 
-## Overview
+## 📂 Project Structure
 
-Job Crawler automatically monitors career pages from your target companies, identifies new grad/associate roles (0-3 years experience), and sends you daily email digests with new postings.
+### [Version-A](./Version-A/)
+The original MVP implementation.
+- **Features**: Keyword-based filtering, single-page scraping, daily email digest.
+- **Status**: 🟢 **Stable & Deployed**
+- **Tech**: Python, Next.js, PostgreSQL.
 
-## Project Structure
+### [Version-B](./Version-B/)
+The next-generation, AI-powered implementation.
+- **Features**: AI Job Analysis (Gemini), Deep Pagination, "Smart" Filtering.
+- **Status**: 🚧 **In Development**
+- **Roadmap**: See [Version-B/ROADMAP.md](./Version-B/ROADMAP.md).
 
-```
-job-crawler/
-├── scraper/          # Python web scraper & digest sender
-├── web/              # Next.js frontend dashboard
-├── docker-compose.yml # Full stack local deployment
-└── ROADMAP.md        # Project roadmap
-```
+## 🚀 Quick Start
 
-## Quick Start (MVP)
-
-The easiest way to run the entire system is via Docker Compose.
-
-### 1. Start the System
-
+To run Version A (Legacy):
 ```bash
-docker compose up --build -d
+cd Version-A
+docker compose up -d
 ```
 
-This starts:
-- **Database** (PostgreSQL) on port `5434` (external) / `5432` (internal)
-- **Web Dashboard** on [http://localhost:3000](http://localhost:3000)
-- **Scraper** (runs once to fetch initial jobs)
-
-### 2. View the Dashboard
-
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
-You should see the jobs fetched from the test company (d1g1t).
-
-### 3. Run Scraper Manually
-
-To trigger a new crawl:
-
+To develop Version B:
 ```bash
-docker compose run scraper
+cd Version-B
+# Follow instructions in Version-B/README.md (Coming soon)
 ```
-
-To send the email digest (requires `credentials.json` for real email, defaults to console output):
-
-```bash
-docker compose run scraper python -m src.digest your.email@example.com
-```
-
-## Configuration
-
-- **Database**: `scraper/sql/001_init.sql` defines the schema.
-- **Companies**: Add more companies to the `companies` table using SQL or by extending the seed data.
-- **Email**: To enable real emails, place your `credentials.json` (Gmail API) in `scraper/`.
-
-## Development
-
-See individual READMEs for detailed development instructions:
-- [Scraper Documentation](./scraper/README.md)
-- [Web UI Documentation](./web/README.md)
-- [Full Roadmap](./ROADMAP.md)
-
-## License
-
-MIT
