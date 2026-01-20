@@ -30,6 +30,7 @@ services:
       DATABASE_NAME: job_crawler
       DATABASE_USER: jobcrawler
       DATABASE_PASSWORD: jobcrawler_dev
+      SCRAPER_URL: http://scraper:8000
     depends_on:
       db:
         condition: service_healthy
@@ -39,8 +40,6 @@ services:
       context: ./scraper
       dockerfile: Dockerfile
     container_name: job-crawler-scraper
-    # Overwrite command to keep container running if needed, or just let it exit
-    # For now, we'll just let it run the main crawler and exit
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -50,8 +49,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Don't restart automatically as it's a one-off job
-    restart: "no"
+    restart: always
 
 volumes:
   postgres_data:

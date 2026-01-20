@@ -7,31 +7,51 @@ import { JobCard } from '@/components/JobCard';
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [crawling, setCrawling] = useState(false);
   const [filters, setFilters] = useState({
     entryLevel: false,
     sort: 'date', // 'date' | 'company'
   });
 
-  useEffect(() => {
-    async function fetchJobs() {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (filters.entryLevel) params.append('entryLevel', 'true');
-      params.append('sort', filters.sort);
+  const fetchJobs = async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filters.entryLevel) params.append('entryLevel', 'true');
+    params.append('sort', filters.sort);
 
-      try {
-        const res = await fetch(`/api/jobs?${params.toString()}`);
-        const data = await res.json();
-        setJobs(data);
-      } catch (error) {
-        console.error('Failed to fetch jobs:', error);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const res = await fetch(`/api/jobs?${params.toString()}`);
+      const data = await res.json();
+      setJobs(data);
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     fetchJobs();
   }, [filters]);
+
+  const handleCrawl = async () => {
+    setCrawling(true);
+    try {
+      const res = await fetch('/api/crawl', { method: 'POST' });
+      if (res.status === 202) {
+        alert('Crawl started! It may take a few minutes. Refresh later to see new jobs.');
+      } else if (res.status === 409) {
+        alert('Crawl already in progress.');
+      } else {
+        alert('Failed to start crawl.');
+      }
+    } catch (error) {
+      console.error('Crawl trigger error:', error);
+      alert('Error triggering crawl.');
+    } finally {
+      setCrawling(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -46,7 +66,17 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={handleCrawl}
+              disabled={crawling}
+              className="rounded-md bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {crawling ? 'Starting...' : 'Crawl Now'}
+            </button>
+
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 hidden sm:block"></div>
+
             <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
               <input
                 type="checkbox"

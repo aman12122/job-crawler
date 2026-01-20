@@ -31,6 +31,7 @@ services:
       DATABASE_NAME: job_crawler
       DATABASE_USER: jobcrawler
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      SCRAPER_URL: http://scraper:8000
       # Limit Node.js memory usage
       NODE_OPTIONS: "--max-old-space-size=400"
     depends_on:
@@ -57,9 +58,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # We will run this via cron on the host, not as a continuously running service
-    profiles:
-      - manual
+    restart: always
 
 volumes:
   postgres_data:

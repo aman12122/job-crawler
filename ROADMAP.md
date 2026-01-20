@@ -286,8 +286,21 @@ View all jobs: https://your-app-url.run.app
 - [x] Dockerize scraper (Python)
 - [x] Dockerize web app (Next.js)
 - [x] Create docker-compose for full stack (DB + Web + Scraper)
-- [ ] Deploy to Cloud Run *(User Action Required)*
-- [ ] Configure Cloud Scheduler *(User Action Required)*
+- [x] Deploy to Cloud Run / VM (Zero Cost Strategy implemented)
+- [x] Configure Cloud Scheduler (via System Cron on VM)
+
+### Phase 6: On-Demand Crawling (Architecture Update) 🔄
+**Goal**: Allow users to trigger crawls manually from the UI
+
+- **Change**: Converted Scraper from a one-off CLI script to a lightweight HTTP service (`src/server.py`).
+- **Reason**: Users need immediate feedback and control, rather than waiting for the daily schedule.
+- **Impact**: 
+    - The `scraper` container now runs continuously (listening on port 8000).
+    - Web UI communicates with Scraper via internal Docker network (`http://scraper:8000/crawl`).
+    - Cron job now uses `curl` or internal Docker call to trigger the endpoint, or simply runs the script command via `docker exec`.
+- [x] Create Scraper HTTP Server
+- [x] Add "Crawl Now" button to Web UI
+- [x] Update Docker Compose to link Web and Scraper services
 
 ### Phase 6: Multi-Company Expansion
 **Goal**: Add more career sites

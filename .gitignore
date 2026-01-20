@@ -46,3 +46,9 @@ credentials.json
 token.json
 *.pem
 *.key
+
+# Deployment & Temp
+.gcp_project_id
+deploy-remote.sh
+*.tar.gz
+docker-compose.gcr.yml

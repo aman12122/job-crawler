@@ -18,5 +18,5 @@ RUN pip install --no-cache-dir .
 # Copy source code
 COPY src/ ./src/
 
-# Default command (can be overridden)
-CMD ["python", "-m", "src.main"]
+# Default command (runs the API server)
+CMD ["python", "-m", "src.server"]
