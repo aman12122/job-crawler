@@ -5,6 +5,28 @@ An AI-powered evolution of the job crawler, designed to find 100% of open jobs u
 
 ## 🏗 Development Log
 
+### Phase 4: Web Dashboard (Completed)
+**Goal**: Update the Next.js frontend to display AI insights and confidence scores.
+
+#### 4.1 Project Setup (`web/package.json`)
+- Cloned the web project from Version A.
+- Upgraded dependencies to include `lucide-react` for UI icons.
+- Renamed project to `job-crawler-web-v2`.
+
+#### 4.2 Database Integration (`web/src/lib/db.ts`)
+- Updated the `Job` type definition to `JobV2` matching the new schema.
+- Added fields for `ai_confidence_score`, `ai_reasoning`, `ai_is_entry_level`.
+
+#### 4.3 API Routes (`web/src/app/api/`)
+- **GET /api/jobs**: Rewrote the query to join `v2_jobs` and `v2_companies`.
+- **Sorting Logic**: Prioritizes jobs that are (1) Analyzed as Entry Level, (2) High Confidence, (3) Recently Updated.
+- **POST /api/crawl**: kept simple trigger logic.
+
+#### 4.4 UI Components (`web/src/components/JobCard.tsx`)
+- **Visual Badges**: Added color-coded badges for confidence scores (Green/Yellow/Red).
+- **Transparency**: Added an expandable "Reasoning" box that shows *why* the AI selected or rejected a job.
+- **Status Indicators**: Shows "Analyzing..." or "Analysis Failed" states.
+
 ### Phase 3: AI Integration (Completed)
 **Goal**: Connect the pipeline to Google Gemini Flash for intelligent job analysis.
 
