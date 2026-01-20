@@ -5,6 +5,27 @@ An AI-powered evolution of the job crawler, designed to find 100% of open jobs u
 
 ## 🏗 Development Log
 
+### Phase 3: AI Integration (Completed)
+**Goal**: Connect the pipeline to Google Gemini Flash for intelligent job analysis.
+
+#### 3.1 Rate Limiter (`src/ai/limiter.py`)
+- Implemented a Token Bucket algorithm using `aiolimiter`.
+- **Reasoning**: Strictly enforces the 15 Request Per Minute (RPM) limit of the Gemini Free Tier. This prevents "Quota Exceeded" errors and ensures long-running stability.
+
+#### 3.2 AI Service (`src/ai/service.py`)
+- Created `AIService` to wrap `google-generativeai` SDK calls.
+- **Key Feature**: Requests JSON output from the model (`response_mime_type: application/json`) for reliable parsing.
+- **Error Handling**: Gracefully handles API failures by marking jobs as `failed` (analysis status) rather than crashing the pipeline.
+
+#### 3.3 Prompt Design
+- **Prompt**: "You are a strict recruiter filtering jobs for a New Graduate (0-2 years)..."
+- **Reasoning**: Explicitly instructs the model to ignore "Preferred" qualifications and focus on "Required" experience.
+- **Output**: Returns `{ is_entry_level, confidence, min_years_experience, reasoning }`.
+
+#### 3.4 Pipeline Integration (`src/pipeline.py`)
+- Wired `AIService` into the async flow.
+- **Optimization**: Added a dedicated `asyncio.Semaphore(1)` for the AI step to ensure requests are processed serially (matching the rate limiter) while other tasks (like fetching HTML) can happen in parallel.
+
 ### Phase 2: Scraper Engine (Completed)
 **Goal**: Build the async scraping engine with pagination support and efficient queuing.
 

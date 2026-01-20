@@ -6,19 +6,21 @@ from .filters import PreFilter
 from .database import Database, JobRepository
 from .scrapers.base import BaseScraper
 from .config import get_settings
+from .ai.service import AIService
 
 logger = logging.getLogger(__name__)
 
 class Pipeline:
     """
     Orchestrates the crawling process:
-    Scrape -> PreFilter -> Detail Fetch -> DB Save
+    Scrape -> PreFilter -> Detail Fetch -> AI Analysis -> DB Save
     """
     
     def __init__(self, scraper: BaseScraper):
         self.scraper = scraper
         self.settings = get_settings()
         self.db = Database()
+        self.ai_service = AIService()
         
     async def run(self) -> CrawlResult:
         """
@@ -36,8 +38,11 @@ class Pipeline:
             logger.info(f"Found {len(jobs)} jobs for {self.scraper.company.name}")
             
             # 2. Process jobs
-            # We use a semaphore to limit concurrent detail fetching
-            sem = asyncio.Semaphore(self.settings.MAX_CONCURRENT_FETCHES)
+            # Semaphores:
+            # - Fetching: Limit based on config to be polite
+            # - AI: Limit to 1 concurrent task to respect rate limiter smoothly
+            fetch_sem = asyncio.Semaphore(self.settings.MAX_CONCURRENT_FETCHES)
+            ai_sem = asyncio.Semaphore(1) 
             
             async def process_job(job: Job):
                 # 2a. Pre-filter
@@ -46,25 +51,31 @@ class Pipeline:
                     logger.debug(f"Skipped {job.title}: {job.prefilter_reason}")
                     return job
 
-                # 2b. Fetch Details (if not skipped)
-                async with sem:
+                # 2b. Fetch Details
+                async with fetch_sem:
                     try:
-                        # Re-open session if needed, but here we assume scraper session is closed
-                        # Ideally scraper handles its own session context.
-                        # For now, we'll open a temporary session for details or refactor.
-                        # Refactor: We should keep scraper session open or create new one.
-                        # Let's assume we re-enter context for each fetch if needed, 
-                        # or better, just use a new session for the detail fetcher.
-                        async with self.scraper: # Re-enter context to get a session
+                        async with self.scraper: 
                             await self.scraper.fetch_job_detail(job)
                     except Exception as e:
                         logger.error(f"Failed to fetch details for {job.title}: {e}")
-                        # Don't fail the whole crawl, just this job
-                        pass
+                        # Don't fail completely, just skip AI
+                        job.analysis_status = 'failed'
+                        return job
+
+                # 2c. AI Analysis (if details exist)
+                if job.raw_description_text:
+                    async with ai_sem:
+                        try:
+                            await self.ai_service.analyze_job(job)
+                        except Exception as e:
+                            logger.error(f"AI step failed for {job.title}: {e}")
+                            job.analysis_status = 'failed'
                 
                 return job
 
             # Run processing concurrently
+            # Note: We process all jobs found. In a real large-scale system, 
+            # we might want to batch this or use a proper queue.
             processed_jobs = await asyncio.gather(*[process_job(job) for job in jobs])
             
             # 3. Save to Database
@@ -72,6 +83,9 @@ class Pipeline:
             repo = JobRepository()
             jobs_added = await repo.upsert_jobs(processed_jobs)
             result.jobs_added = jobs_added
+            
+            # Calculate stats
+            result.pages_crawled = 1 # TODO: Update scraper to return page count
             
             logger.info(f"Crawl finished for {self.scraper.company.name}. Added {jobs_added} jobs.")
             
