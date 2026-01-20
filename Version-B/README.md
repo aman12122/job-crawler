@@ -5,6 +5,30 @@ An AI-powered evolution of the job crawler, designed to find 100% of open jobs u
 
 ## 🏗 Development Log
 
+### Phase 5: Testing & Deployment (Completed)
+**Goal**: Prepare the system for production release.
+
+#### 5.1 Entrypoint (`scraper/src/main.py`)
+- Created an `aiohttp` web server that listens for crawl triggers.
+- **Concurrency**: Implemented a global lock to prevent overlapping crawls.
+- **Background Tasks**: Crawls run in the background so the HTTP request returns immediately (`202 Accepted`).
+
+#### 5.2 Production Dockerfiles
+- **Scraper**: Multi-stage python build to keep image size small (~200MB).
+- **Web**: Next.js standalone build logic (inherited from V1, verified).
+
+#### 5.3 Infrastructure (`docker-compose.prod.yml`)
+- Configured services for the `e2-micro` environment (low memory limits).
+- **Volumes**: Configured to create a new `postgres_data` volume for the "Fresh Start" strategy.
+
+#### 5.4 Deployment Automation (`deploy.sh`)
+- Created a script to safely transition from Version A to Version B.
+- **Steps**:
+    1. Checks for API keys.
+    2. Stops running V1 containers.
+    3. Builds and starts V2.
+    4. Initializes the new V2 database schema.
+
 ### Phase 4: Web Dashboard (Completed)
 **Goal**: Update the Next.js frontend to display AI insights and confidence scores.
 
@@ -110,4 +134,4 @@ An AI-powered evolution of the job crawler, designed to find 100% of open jobs u
 
 1.  **Get a Gemini API Key**: Follow instructions in [scraper/README.md](scraper/README.md).
 2.  **Configure**: Copy `.env.example` to `.env` in `scraper/`.
-3.  **Start DB**: `docker compose up -d db`
+3.  **Deploy**: Run `./deploy.sh` to switch from Version A to Version B.
